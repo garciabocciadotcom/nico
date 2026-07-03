@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Infraestructura de Distribución · Documento privado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1015;
+    --bg-2:#0E141B;
+    --panel:rgba(15,21,29,.72);
+    --line:#1E2A37;
+    --line-soft:#16202B;
+    --ink:#E9E4D8;
+    --muted:#8B96A2;
+    --dim:#5A6672;
+    --amber:#E3A44A;
+    --amber-soft:rgba(227,164,74,.14);
+    --steel:#5E7E98;
+    --dead:#7A8794;
+    --serif:'Spectral', Georgia, serif;
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--amber-soft);color:var(--ink)}
+
+  /* ---------- Canvas de red (fondo persistente) ---------- */
+  #net{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+
+  /* ---------- Bloqueo para viewports chicos ---------- */
+  #gate{display:none}
+  @media (max-width:1023px){
+    #gate{
+      display:flex;position:fixed;inset:0;z-index:1000;
+      background:var(--bg);
+      flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:32px;gap:28px;
+    }
+    body{overflow:hidden;height:100vh}
+    main, #topbar, #net, footer{display:none}
+  }
+  #gate .gate-mark{font-family:var(--mono);font-size:11px;letter-spacing:.32em;color:var(--amber);text-transform:uppercase}
+  #gate h1{font-family:var(--serif);font-weight:300;font-size:clamp(26px,7vw,34px);line-height:1.3;max-width:26ch}
+  #gate p{font-family:var(--mono);font-size:12px;line-height:2;color:var(--muted);max-width:34ch;letter-spacing:.06em}
+  #gate .gate-line{width:56px;height:1px;background:var(--line)}
+
+  /* ---------- Barra superior ---------- */
+  #topbar{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 40px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--line-soft);
+    background:rgba(11,16,21,.82);
+    backdrop-filter:blur(10px);
+  }
+  #topbar .tb-left{color:var(--ink)}
+  #topbar .tb-right span{color:var(--dim)}
+  #topbar .tb-right b{color:var(--amber);font-weight:500}
+
+  /* ---------- Layout ---------- */
+  main{position:relative;z-index:1}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 48px}
+  section{position:relative;padding:150px 0}
+  .panel{background:var(--panel);border:1px solid var(--line-soft);backdrop-filter:blur(6px)}
+
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--amber);
+    display:flex;align-items:center;gap:14px;margin-bottom:28px;
+  }
+  .eyebrow::before{content:'';width:36px;height:1px;background:var(--amber);opacity:.6}
+
+  h2{
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(36px,3.8vw,50px);line-height:1.16;
+    letter-spacing:-.01em;max-width:22ch;margin-bottom:24px;
+  }
+  h2 em{font-style:italic;color:var(--amber)}
+  .lede{color:var(--muted);max-width:60ch;font-size:18px}
+  .lede b{color:var(--ink);font-weight:500}
+
+  /* ---------- HERO ---------- */
+  #hero{min-height:100vh;display:flex;align-items:center;padding-top:120px}
+  #hero h1{
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(50px,5.6vw,78px);line-height:1.08;
+    letter-spacing:-.015em;max-width:17ch;margin-bottom:36px;
+  }
+  #hero h1 em{font-style:italic;color:var(--amber)}
+  #hero .sub{color:var(--muted);font-size:19px;max-width:54ch;margin-bottom:56px}
+  #hero .hero-meta{
+    display:flex;gap:42px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim);
+  }
+  #hero .hero-meta div b{display:block;color:var(--ink);font-size:12.5px;margin-bottom:4px;letter-spacing:.2em;font-weight:500}
+  .scroll-hint{
+    position:absolute;bottom:44px;left:48px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--dim);
+    display:flex;align-items:center;gap:12px;
+  }
+  .scroll-hint::after{
+    content:'';width:1px;height:38px;background:linear-gradient(var(--amber),transparent);
+    animation:drip 2.2s ease-in-out infinite;
+  }
+  @keyframes drip{0%{opacity:0;transform:translateY(-8px)}40%{opacity:1}100%{opacity:0;transform:translateY(8px)}}
+
+  /* ---------- 01 DIAGNÓSTICO: los dos loops ---------- */
+  .diag{
+    margin-top:70px;display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:var(--line-soft);border:1px solid var(--line-soft);
+  }
+  .diag > div{background:var(--bg-2);padding:48px}
+  .dk{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;
+    text-transform:uppercase;margin-bottom:20px;
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+  }
+  .dk-dead{color:var(--dead)}
+  .dk-live{color:var(--amber)}
+  .dk .tag{
+    border:1px solid currentColor;padding:4px 10px;font-size:9px;
+    letter-spacing:.2em;white-space:nowrap;
+  }
+
+  /* loop circular con etiquetas en esquinas */
+  .loop{position:relative;width:240px;height:240px;margin:64px auto 58px}
+  .loop svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .loop .ring{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:3 6}
+  .orbit{position:absolute;inset:0}
+  .orbit i{
+    position:absolute;top:-5px;left:50%;margin-left:-5px;
+    width:10px;height:10px;border-radius:50%;
+  }
+  .o-dead i{background:var(--dead);box-shadow:0 0 14px rgba(122,135,148,.8)}
+  .o-live i{background:var(--amber);box-shadow:0 0 14px rgba(227,164,74,.8)}
+  .loop-step{
+    position:absolute;width:118px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim);line-height:1.7;
+    transition:color .4s;
+  }
+  .loop-step b{display:block;color:var(--dim);font-size:10px;margin-bottom:2px;font-weight:500;transition:color .4s}
+  .loop-step.on{color:var(--muted)}
+  .loop-dead .loop-step.on b{color:var(--ink)}
+  .loop-live .loop-step.on b{color:var(--amber)}
+  .ls-ne{top:-16px;right:-86px}
+  .ls-se{bottom:-16px;right:-86px}
+  .ls-sw{bottom:-16px;left:-86px;text-align:right}
+  .ls-nw{top:-16px;left:-86px;text-align:right}
+
+  .meter-label{
+    font-family:var(--mono);font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:12px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .meter{
+    height:8px;background:rgba(122,135,148,.12);
+    border:1px solid var(--line);position:relative;overflow:hidden;
+  }
+  .meter i{
+    display:block;height:100%;width:82%;
+    background:linear-gradient(90deg,rgba(122,135,148,.7),rgba(122,135,148,.25));
+  }
+  .meter i.up{
+    width:12%;
+    background:linear-gradient(90deg,rgba(227,164,74,.8),rgba(227,164,74,.3));
+  }
+  .pauta-chip{
+    font-family:var(--mono);font-size:9px;letter-spacing:.22em;
+    color:var(--bg);background:var(--dead);
+    padding:3px 9px;opacity:0;text-transform:uppercase;
+  }
+  .comp-chip{
+    font-family:var(--mono);font-size:9px;letter-spacing:.22em;
+    color:var(--bg);background:var(--amber);
+    padding:3px 9px;opacity:0;text-transform:uppercase;
+  }
+  .loop-verdict{
+    margin-top:28px;font-family:var(--serif);font-style:italic;
+    font-size:19px;line-height:1.55;color:var(--muted);max-width:40ch;
+  }
+  .loop-verdict b{color:var(--ink);font-weight:400;font-style:normal}
+
+  /* la diferencia estructural */
+  .diag-alt{grid-column:1/-1}
+  .alt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:56px;margin-top:26px}
+  .alt-item h3{
+    font-family:var(--serif);font-weight:400;font-size:22px;
+    margin-bottom:10px;letter-spacing:-.01em;
+    display:flex;align-items:baseline;gap:16px;
+  }
+  .alt-item h3 .ai-n{
+    font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--amber);
+  }
+  .alt-item p{font-size:15px;color:var(--muted);line-height:1.75}
+
+  /* ---------- PIPELINE ---------- */
+  .steps{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+    margin-top:70px;position:relative;
+  }
+  .steps::before{content:'';position:absolute;top:11px;left:0;right:0;height:1px;background:var(--line)}
+  .steps .flow{
+    position:absolute;top:11px;left:0;height:1px;width:0;
+    background:linear-gradient(90deg,var(--amber),rgba(227,164,74,.35));
+    box-shadow:0 0 12px rgba(227,164,74,.5);
+  }
+  .step{padding:0 34px 0 0;position:relative}
+  .step .dot{
+    width:23px;height:23px;border-radius:50%;
+    border:1px solid var(--line);background:var(--bg);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:26px;position:relative;z-index:2;
+  }
+  .step .dot i{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+  .step .dot.lit{border-color:var(--amber);box-shadow:0 0 16px rgba(227,164,74,.25)}
+  .step .dot.lit i{background:var(--amber)}
+  .step .n{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--amber);margin-bottom:12px}
+  .step h3{font-family:var(--serif);font-weight:400;font-size:23px;margin-bottom:12px;letter-spacing:-.01em}
+  .step p{font-size:15px;color:var(--muted);line-height:1.7;max-width:30ch}
+
+  /* ---------- Contador vivo ---------- */
+  .live{
+    margin-top:90px;padding:56px 64px;
+    display:flex;align-items:center;justify-content:space-between;gap:60px;
+  }
+  .live .label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:12px;margin-bottom:10px;
+  }
+  .live .label .pulse{
+    width:8px;height:8px;border-radius:50%;background:var(--amber);
+    animation:blink 1.6s ease-in-out infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(227,164,74,.5)}50%{opacity:.55;box-shadow:0 0 0 6px rgba(227,164,74,0)}}
+  .live .num{
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(72px,7vw,104px);
+    line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+  }
+  .live .num.tick{animation:tick .35s ease}
+  @keyframes tick{0%{color:var(--amber);text-shadow:0 0 24px rgba(227,164,74,.55)}100%{color:var(--ink)}}
+  .live .desc{max-width:34ch;color:var(--muted);font-size:16px;line-height:1.75}
+  .live .desc b{color:var(--ink);font-weight:500}
+
+  /* ---------- PARA QUIÉN ---------- */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin-top:64px}
+  .card{background:var(--bg-2);padding:44px 38px}
+  .card .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);margin-bottom:22px}
+  .card h3{font-family:var(--serif);font-weight:400;font-size:24px;margin-bottom:14px;letter-spacing:-.01em}
+  .card p{font-size:15px;color:var(--muted);line-height:1.75}
+
+  .whitelabel{
+    margin-top:64px;padding:48px 64px;
+    display:grid;grid-template-columns:auto 1fr;gap:48px;align-items:start;
+  }
+  .whitelabel .wl-k{
+    font-family:var(--mono);font-size:11px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--amber);white-space:nowrap;padding-top:6px;
+  }
+  .whitelabel p{color:var(--muted);max-width:64ch;font-size:16.5px}
+  .whitelabel p b{color:var(--ink);font-weight:500}
+
+  /* ---------- ORGÁNICO DICTA LA PAUTA ---------- */
+  .selector{margin-top:70px;padding:64px;position:relative}
+  .sel-row-label{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:18px;
+    display:flex;justify-content:space-between;
+  }
+  .sel-row-label .amber{color:var(--amber)}
+  .paid-row{display:flex;gap:22px;align-items:flex-end;height:120px;margin-bottom:14px}
+  .paid-bar{
+    flex:0 0 120px;height:var(--h);
+    background:linear-gradient(180deg,rgba(227,164,74,.85),rgba(227,164,74,.28));
+    border-top:1px solid var(--amber);
+    position:relative;transform-origin:bottom;
+  }
+  .paid-bar::after{
+    content:attr(data-tag);
+    position:absolute;top:-26px;left:0;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+    color:var(--amber);text-transform:uppercase;white-space:nowrap;
+  }
+  .sel-divider{height:1px;background:var(--line);margin:10px 0 46px;position:relative}
+  .sel-divider::after{
+    content:'LOS DATOS DECIDEN QUÉ SUBE';
+    position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+    background:var(--bg-2);padding:0 18px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;color:var(--dim);
+  }
+  .org-row{display:flex;gap:8px;align-items:flex-end;height:150px}
+  .org-bar{
+    flex:1;height:var(--h);
+    background:rgba(94,126,152,.32);
+    border-top:1px solid rgba(94,126,152,.55);
+    transform-origin:bottom;
+  }
+  .org-bar.win{
+    background:linear-gradient(180deg,rgba(227,164,74,.75),rgba(227,164,74,.18));
+    border-color:var(--amber);
+    box-shadow:0 0 22px rgba(227,164,74,.25);
+  }
+  .sel-caption{margin-top:44px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px}
+  .sel-caption div{font-size:14.5px;color:var(--muted);line-height:1.7}
+  .sel-caption b{display:block;color:var(--ink);font-weight:500;margin-bottom:6px;font-size:15px}
+  .sel-quote{
+    margin-top:70px;font-family:var(--serif);font-weight:300;
+    font-size:clamp(26px,2.7vw,36px);
+    line-height:1.35;max-width:30ch;letter-spacing:-.01em;
+  }
+  .sel-quote em{color:var(--amber);font-style:italic}
+  .platforms{display:flex;gap:14px;margin-top:52px;flex-wrap:wrap}
+  .chip{
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);padding:12px 22px;
+    transition:color .3s, border-color .3s, background .3s;cursor:default;
+  }
+  .chip:hover{color:var(--ink);border-color:var(--amber);background:var(--amber-soft)}
+
+  /* ---------- RESULTADOS ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin-top:70px}
+  .stat{background:var(--bg-2);padding:52px 40px}
+  .stat .v{
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(44px,4vw,58px);line-height:1;
+    letter-spacing:-.02em;margin-bottom:16px;font-variant-numeric:tabular-nums;
+  }
+  .stat .v small{font-size:.55em;color:var(--amber)}
+  .stat .t{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);line-height:2}
+
+  /* ---------- MODO DE TRABAJO: WATERFALL ---------- */
+  .gantt{margin-top:70px;padding:38px 44px}
+  .gantt-grid{
+    display:grid;grid-template-columns:200px repeat(6,1fr);
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);
+  }
+  .gantt-grid .gh{padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .gantt-row{display:grid;grid-template-columns:200px repeat(6,1fr);align-items:center;position:relative}
+  .gantt-row + .gantt-row .g-label, .gantt-row + .gantt-row .g-cell{border-top:1px solid var(--line-soft)}
+  .g-label{padding:16px 20px 16px 0;font-size:14px;color:var(--ink);line-height:1.4}
+  .g-label .ph{
+    font-family:var(--mono);font-size:9px;letter-spacing:.22em;
+    color:var(--amber);display:block;margin-bottom:4px;text-transform:uppercase;
+  }
+  .g-label .gd{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.55}
+  .g-cell{height:100%;min-height:58px;position:relative}
+  .g-bar{
+    position:absolute;top:50%;transform:translateY(-50%);
+    transform-origin:left center;
+    height:8px;left:6px;right:6px;
+    background:linear-gradient(90deg,rgba(227,164,74,.8),rgba(227,164,74,.25));
+    border-left:2px solid var(--amber);
+  }
+  .g-bar.cont{
+    background:repeating-linear-gradient(90deg,rgba(227,164,74,.5) 0 10px,transparent 10px 18px);
+  }
+
+  /* ---------- DISCRECIÓN ---------- */
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin-top:64px}
+  .g-item{background:var(--bg-2);padding:44px 36px}
+  .g-item svg{width:26px;height:26px;stroke:var(--amber);stroke-width:1.4;fill:none;margin-bottom:26px}
+  .g-item h3{font-family:var(--serif);font-weight:400;font-size:21px;margin-bottom:12px}
+  .g-item p{font-size:14px;color:var(--muted);line-height:1.75}
+
+  /* ---------- CIERRE ---------- */
+  #close{padding:180px 0 120px;text-align:center}
+  #close .final{
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(30px,3.4vw,46px);
+    line-height:1.3;max-width:26ch;margin:0 auto;letter-spacing:-.01em;
+  }
+  #close .final em{color:var(--amber);font-style:italic}
+  footer{
+    border-top:1px solid var(--line-soft);
+    padding:26px 40px;
+    display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--dim);
+    position:relative;z-index:1;background:rgba(11,16,21,.85);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+<!-- Bloqueo mobile -->
+<div id="gate">
+  <div class="gate-mark">Documento privado</div>
+  <h1>Esta experiencia fue diseñada para verse en pantalla completa.</h1>
+  <div class="gate-line"></div>
+  <p>Abrí este enlace desde una computadora para acceder al briefing completo.</p>
+</div>
+
+<canvas id="net"></canvas>
+
+<div id="topbar">
+  <div class="tb-left">Infraestructura de Distribución</div>
+  <div class="tb-right"><b>Documento privado</b> <span>· No indexado · Sin trazabilidad</span></div>
+</div>
+
+<main>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="wrap">
+      <div class="eyebrow hro">Briefing confidencial · Comunicación política · LATAM</div>
+      <h1 class="hro">La infraestructura que opera <em>detrás de la estrategia.</em></h1>
+      <p class="sub hro">Distribución orgánica coordinada a escala industrial para estrategas, asesores y equipos de comunicación política. Una narrativa entra. Cientos de piezas nativas salen, todos los días, en todas las plataformas.</p>
+      <div class="hero-meta hro">
+        <div><b>Operación continua</b>7 días por semana</div>
+        <div><b>Volumen industrial</b>Cientos de piezas diarias</div>
+        <div><b>Sistemas modulares</b>Ampliables por tema y campaña</div>
+        <div><b>White label</b>Sin marca ni huella</div>
+      </div>
+    </div>
+    <div class="scroll-hint">Continuar</div>
+  </section>
+
+  <!-- 01 DIAGNÓSTICO -->
+  <section id="diagnosis" data-mode="calm">
+    <div class="wrap">
+      <div class="eyebrow rv">01 · El diagnóstico</div>
+      <h2 class="rv">La cuenta oficial <em>está muerta.</em></h2>
+      <p class="lede rv">Nadie sigue ni quiere seguir el contenido de un político. Las cuentas oficiales publican un volumen enorme de material que a la mayoría no le interesa, el algoritmo lo detecta y lo muestra cada vez menos. <b>Es un loop negativo que solo respira con pauta.</b> Y nadie cree en el spot súper producido.</p>
+
+      <div class="diag rv" id="diagLoops">
+        <div class="loop-dead">
+          <div class="dk dk-dead"><span>El loop de la cuenta oficial</span><span class="tag">Modelo agotado</span></div>
+          <div class="loop">
+            <svg viewBox="0 0 240 240"><circle class="ring" cx="120" cy="120" r="92"/></svg>
+            <div class="orbit o-dead"><i></i></div>
+            <div class="loop-step ls-ne"><b>Publica</b>contenido que no interesa</div>
+            <div class="loop-step ls-se"><b>Nadie lo ve</b>ni lo comparte</div>
+            <div class="loop-step ls-sw"><b>El algoritmo</b>lo castiga</div>
+            <div class="loop-step ls-nw"><b>Menos alcance</b>todavía</div>
+          </div>
+          <div class="meter-label"><span>Alcance orgánico</span><span class="pauta-chip" id="pautaChip">Inyección de pauta</span></div>
+          <div class="meter"><i id="meterDead"></i></div>
+          <p class="loop-verdict">El único respirador artificial es la pauta permanente. <b>Se corta el presupuesto, se corta la existencia.</b></p>
+        </div>
+        <div class="loop-live">
+          <div class="dk dk-live"><span>El loop de la red</span><span class="tag">Este sistema</span></div>
+          <div class="loop">
+            <svg viewBox="0 0 240 240"><circle class="ring" cx="120" cy="120" r="92"/></svg>
+            <div class="orbit o-live"><i></i></div>
+            <div class="loop-step ls-ne"><b>Publica</b>contenido nativo que interesa</div>
+            <div class="loop-step ls-se"><b>La audiencia</b>lo ve y lo comparte</div>
+            <div class="loop-step ls-sw"><b>El algoritmo</b>lo premia</div>
+            <div class="loop-step ls-nw"><b>Más alcance</b>y más señal</div>
+          </div>
+          <div class="meter-label"><span>Alcance orgánico</span><span class="comp-chip" id="compChip">Efecto compuesto</span></div>
+          <div class="meter"><i id="meterLive" class="up"></i></div>
+          <p class="loop-verdict">El alcance se acumula y se compone sobre sí mismo. <b>No necesita presupuesto para existir.</b></p>
+        </div>
+        <div class="diag-alt">
+          <div class="dk dk-live"><span>La diferencia estructural</span><span class="tag">Red no trazable</span></div>
+          <div class="alt-grid">
+            <div class="alt-item">
+              <h3><span class="ai-n">A</span>Sin cuentas oficiales</h3>
+              <p>Ninguna pieza carga el peso de la marca política. El contenido no es trazable a un comando, un partido ni un gobierno.</p>
+            </div>
+            <div class="alt-item">
+              <h3><span class="ai-n">B</span>Nativo, no institucional</h3>
+              <p>Piezas que se sienten parte del feed, no un spot súper producido que la audiencia descarta antes del segundo dos.</p>
+            </div>
+            <div class="alt-item">
+              <h3><span class="ai-n">C</span>Modular y ampliable</h3>
+              <p>Sistemas que se expanden por tema, territorio y campaña. La red crece con la agenda, no se agota con ella.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 CÓMO FUNCIONA -->
+  <section id="how" data-mode="flow">
+    <div class="wrap">
+      <div class="eyebrow rv">02 · Cómo funciona</div>
+      <h2 class="rv">Una narrativa se convierte en un ecosistema.</h2>
+      <p class="lede rv">El sistema no produce contenido aislado: multiplica un mensaje central en cientos de piezas nativas, adaptadas por audiencia, tono y plataforma, distribuidas por una red coordinada de cuentas.</p>
+
+      <div class="steps rv" id="steps">
+        <div class="flow" id="flowLine"></div>
+        <div class="step">
+          <div class="dot"><i></i></div>
+          <div class="n">Fase 01</div>
+          <h3>Narrativa central</h3>
+          <p>La estrategia define el mensaje. Uno. Claro, deliberado y con objetivo.</p>
+        </div>
+        <div class="step">
+          <div class="dot"><i></i></div>
+          <div class="n">Fase 02</div>
+          <h3>Fragmentación</h3>
+          <p>El mensaje se convierte en decenas de guiones adaptados por segmento, tono y formato.</p>
+        </div>
+        <div class="step">
+          <div class="dot"><i></i></div>
+          <div class="n">Fase 03</div>
+          <h3>Producción industrial</h3>
+          <p>Un equipo dedicado de edición produce piezas nativas en volumen, sin pausa.</p>
+        </div>
+        <div class="step">
+          <div class="dot"><i></i></div>
+          <div class="n">Fase 04</div>
+          <h3>Despliegue en red</h3>
+          <p>Más de 20 cuentas coordinadas distribuyen en TikTok, Instagram, YouTube y Facebook.</p>
+        </div>
+      </div>
+
+      <div class="live panel rv" id="liveBox">
+        <div>
+          <div class="label"><span class="pulse"></span>Piezas distribuidas hoy</div>
+          <div class="num" id="liveNum">0</div>
+        </div>
+        <p class="desc">Cada vez que este número sube, una nueva pieza acaba de entrar en circulación. <b>Entre 150 y 250 piezas nativas por día.</b> Sin feriados, sin fines de semana, sin pausa.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 PARA QUIÉN -->
+  <section id="who" data-mode="calm">
+    <div class="wrap">
+      <div class="eyebrow rv">03 · Para quién</div>
+      <h2 class="rv">Diseñado para quien dirige la conversación.</h2>
+      <p class="lede rv">Esto no reemplaza a la estrategia ni al estratega. Es la capacidad operativa que la vuelve inevitable.</p>
+
+      <div class="cards rv">
+        <div class="card">
+          <div class="k">Perfil A</div>
+          <h3>Estrategas de campaña</h3>
+          <p>Llegar a la mesa del candidato con una capacidad de distribución que ningún equipo rival puede improvisar en meses.</p>
+        </div>
+        <div class="card">
+          <div class="k">Perfil B</div>
+          <h3>Asesores de gobierno</h3>
+          <p>Sostener la narrativa de gestión todos los días del año, no solo cuando hay crisis o elecciones.</p>
+        </div>
+        <div class="card">
+          <div class="k">Perfil C</div>
+          <h3>Directores de comunicación</h3>
+          <p>Sumar volumen y consistencia de nivel industrial sin inflar la estructura interna del equipo.</p>
+        </div>
+      </div>
+
+      <div class="whitelabel panel rv">
+        <div class="wl-k">White label</div>
+        <p>La operación funciona en modelo <b>white label</b>: el trabajo se integra bajo tu dirección y tu relación con el cliente permanece intacta. No existe marca, sitio público ni referencia que rastrear, y no se contacta ni se compite jamás por tu cliente.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 DISTRIBUCIÓN -->
+  <section id="organic" data-mode="cluster">
+    <div class="wrap">
+      <div class="eyebrow rv">04 · Distribución</div>
+      <h2 class="rv">El contenido orgánico <em>dicta</em> la pauta.</h2>
+      <p class="lede rv">La red orgánica funciona como un laboratorio en tiempo real: cientos de piezas compiten frente a audiencias reales y los datos revelan qué narrativa resuena. Solo lo validado se amplifica con inversión.</p>
+
+      <div class="selector panel rv" id="selector">
+        <div class="sel-stage">
+          <div class="sel-row-label"><span class="amber">Amplificación pagada</span><span>Solo contenido validado</span></div>
+          <div class="paid-row" id="paidRow">
+            <div class="paid-bar" style="--h:96px" data-tag="Validada · escala"></div>
+            <div class="paid-bar" style="--h:78px" data-tag="Validada · escala"></div>
+            <div class="paid-bar" style="--h:64px" data-tag="Validada · escala"></div>
+          </div>
+          <div class="sel-divider"></div>
+          <div class="sel-row-label"><span>Red orgánica</span><span>Prueba en tiempo real</span></div>
+          <div class="org-row" id="orgRow"></div>
+        </div>
+        <div class="sel-caption">
+          <div><b>La red prueba.</b> Cientos de piezas orgánicas exploran ángulos, tonos y formatos frente a audiencias reales.</div>
+          <div><b>Los datos deciden.</b> Retención, compartidos y comentarios señalan qué narrativa está funcionando de verdad.</div>
+          <div><b>La pauta escala.</b> La inversión publicitaria se concentra únicamente en lo que ya demostró resonar.</div>
+        </div>
+      </div>
+
+      <p class="sel-quote rv">Nadie invierte en publicidad a ciegas cuando la red ya le dijo <em>qué funciona.</em></p>
+
+      <div class="platforms rv">
+        <div class="chip">TikTok</div>
+        <div class="chip">Instagram</div>
+        <div class="chip">YouTube</div>
+        <div class="chip">Facebook</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 CAPACIDAD -->
+  <section id="results" data-mode="grid">
+    <div class="wrap">
+      <div class="eyebrow rv">05 · Capacidad operativa</div>
+      <h2 class="rv">Órdenes de magnitud, no promesas.</h2>
+
+      <div class="stats rv" id="stats">
+        <div class="stat">
+          <div class="v"><span data-count="150">0</span><small>-250</small></div>
+          <div class="t">Piezas nativas<br>por día</div>
+        </div>
+        <div class="stat">
+          <div class="v"><span data-count="20">0</span><small>+</small></div>
+          <div class="t">Cuentas coordinadas<br>en red</div>
+        </div>
+        <div class="stat">
+          <div class="v"><span data-count="4">0</span></div>
+          <div class="t">Plataformas<br>simultáneas</div>
+        </div>
+        <div class="stat">
+          <div class="v"><span data-count="7">0</span><small>/7</small></div>
+          <div class="t">Días de operación<br>continua</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 MODO DE TRABAJO -->
+  <section id="method" data-mode="calm">
+    <div class="wrap">
+      <div class="eyebrow rv">06 · Modo de trabajo</div>
+      <h2 class="rv">Protocolo, no improvisación.</h2>
+      <p class="lede rv">Del primer briefing al despliegue completo en cuatro semanas. A partir de ahí, la máquina no se detiene.</p>
+
+      <div class="gantt panel rv" id="gantt">
+        <div class="gantt-grid">
+          <div class="gh"></div>
+          <div class="gh">Semana 1</div>
+          <div class="gh">Semana 2</div>
+          <div class="gh">Semana 3</div>
+          <div class="gh">Semana 4</div>
+          <div class="gh">Mes 2</div>
+          <div class="gh">Mes 3 +</div>
+        </div>
+        <div class="gantt-row">
+          <div class="g-label"><span class="ph">Fase 01</span>Briefing y confidencialidad<span class="gd">Objetivos, mapa narrativo y acuerdos de reserva.</span></div>
+          <div class="g-cell"><div class="g-bar gb"></div></div>
+          <div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div>
+        </div>
+        <div class="gantt-row">
+          <div class="g-label"><span class="ph">Fase 02</span>Arquitectura de red<span class="gd">Diseño de cuentas, líneas editoriales y protocolos.</span></div>
+          <div class="g-cell"></div>
+          <div class="g-cell"><div class="g-bar gb" style="right:calc(-100% + 6px)"></div></div>
+          <div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div>
+        </div>
+        <div class="gantt-row">
+          <div class="g-label"><span class="ph">Fase 03</span>Despliegue<span class="gd">Producción activa y primeras piezas en circulación.</span></div>
+          <div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div>
+          <div class="g-cell"><div class="g-bar gb"></div></div>
+          <div class="g-cell"></div><div class="g-cell"></div>
+        </div>
+        <div class="gantt-row">
+          <div class="g-label"><span class="ph">Fase 04</span>Escala y dirección<span class="gd">Reporte privado, lectura de datos y ajuste narrativo continuo.</span></div>
+          <div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div><div class="g-cell"></div>
+          <div class="g-cell"><div class="g-bar gb cont" style="right:calc(-100% + 6px)"></div></div>
+          <div class="g-cell"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 DISCRECIÓN -->
+  <section id="discretion" data-mode="calm">
+    <div class="wrap">
+      <div class="eyebrow rv">07 · Discreción</div>
+      <h2 class="rv">La invisibilidad es parte del diseño.</h2>
+
+      <div class="grid4 rv">
+        <div class="g-item">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>
+          <h3>White label total</h3>
+          <p>Todo el trabajo se integra bajo tu operación. Ninguna pieza lleva otra firma que la tuya.</p>
+        </div>
+        <div class="g-item">
+          <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+          <h3>Confidencialidad</h3>
+          <p>Acuerdos de reserva firmados antes de conocer un solo detalle del proyecto.</p>
+        </div>
+        <div class="g-item">
+          <svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.9 4.5A9.8 9.8 0 0121 12a15.6 15.6 0 01-3.2 3.8M6.1 6.4A15.4 15.4 0 003 12a9.9 9.9 0 0011.4 5.6"/></svg>
+          <h3>Sin huella pública</h3>
+          <p>Sin marca, sin sitio indexado, sin casos publicados. Este documento es la única puerta.</p>
+        </div>
+        <div class="g-item">
+          <svg viewBox="0 0 24 24"><path d="M4 12h13M13 6l6 6-6 6"/></svg>
+          <h3>Reporte directo</h3>
+          <p>Los datos y resultados se reportan a una sola persona: quien dirige la estrategia.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CIERRE -->
+  <section id="close" data-mode="hero">
+    <div class="wrap">
+      <p class="final rv">La conversación pública ya no se gana con cuentas oficiales. <em>Se gana con infraestructura.</em></p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div>Infraestructura de Distribución</div>
+  <div>Documento privado · Compartir solo con destinatarios directos</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hasGsap = typeof gsap !== 'undefined';
+  if(hasGsap && typeof ScrollTrigger !== 'undefined') gsap.registerPlugin(ScrollTrigger);
+  function rand(a,b){ return a + Math.random()*(b-a); }
+
+  /* ============ RED DE NODOS (canvas persistente) ============ */
+  const cv = document.getElementById('net');
+  const ctx = cv.getContext('2d');
+  let W, H, nodes = [], mode = 'hero', t = 0;
+  const N = 110;
+
+  function resize(){
+    W = cv.width = innerWidth * devicePixelRatio;
+    H = cv.height = innerHeight * devicePixelRatio;
+    cv.style.width = innerWidth + 'px';
+    cv.style.height = innerHeight + 'px';
+    layout();
+  }
+
+  function initNodes(){
+    nodes = [];
+    for(let i=0;i<N;i++){
+      nodes.push({
+        x: rand(0,1), y: rand(0,1),
+        tx: 0, ty: 0,
+        jx: rand(-1,1), jy: rand(-1,1),
+        ph: rand(0, Math.PI*2),
+        r: rand(1,2.2),
+        seed: Math.random()
+      });
+    }
+  }
+
+  const layouts = {
+    hero(n,i){
+      const cx=.68, cy=.5;
+      const ring = 1 + (i % 4);
+      const ang = (i / N) * Math.PI * 2 * 3 + n.seed*2;
+      const rad = ring * .09 + n.seed*.05;
+      return [cx + Math.cos(ang)*rad*1.15, cy + Math.sin(ang)*rad];
+    },
+    flow(n,i){
+      const col = i % 4;
+      const x = .12 + col*.25 + n.seed*.1;
+      const y = .25 + ((i*7)%N)/N * .55;
+      return [x,y];
+    },
+    cluster(n,i){
+      const c = i % 4;
+      const cx = .18 + c*.215, cy = .55;
+      const ang = n.seed*Math.PI*2, rad = .04 + n.seed*.07;
+      return [cx + Math.cos(ang)*rad, cy + Math.sin(ang)*rad*1.4];
+    },
+    grid(n,i){
+      const cols = 14, row = Math.floor(i/cols), col = i%cols;
+      return [.1 + col*.058, .2 + row*.085];
+    },
+    calm(n,i){
+      const side = i%2 ? .92 : .08;
+      return [side + n.jx*.06, .15 + n.seed*.7];
+    }
+  };
+
+  function layout(){
+    const fn = layouts[mode] || layouts.calm;
+    nodes.forEach((n,i)=>{ const p=fn(n,i); n.tx=p[0]; n.ty=p[1]; });
+  }
+
+  function draw(){
+    t += .006;
+    ctx.clearRect(0,0,W,H);
+    const px = x=>x*W, py = y=>y*H;
+
+    nodes.forEach(n=>{
+      const driftX = Math.sin(t*1.4 + n.ph)*.006*n.jx;
+      const driftY = Math.cos(t*1.1 + n.ph)*.006*n.jy;
+      n.x += (n.tx + driftX - n.x)*.022;
+      n.y += (n.ty + driftY - n.y)*.022;
+    });
+
+    ctx.lineWidth = 1;
+    for(let i=0;i<N;i++){
+      for(let j=i+1;j<N;j++){
+        const a=nodes[i], b=nodes[j];
+        const dx=(a.x-b.x)*1.6, dy=a.y-b.y;
+        const d = dx*dx+dy*dy;
+        if(d < .012){
+          const o = (1 - d/.012)*.16;
+          ctx.strokeStyle = 'rgba(94,126,152,'+o+')';
+          ctx.beginPath();
+          ctx.moveTo(px(a.x),py(a.y));
+          ctx.lineTo(px(b.x),py(b.y));
+          ctx.stroke();
+        }
+      }
+    }
+
+    nodes.forEach((n,i)=>{
+      const glow = i % 9 === 0;
+      const pulse = glow ? (Math.sin(t*3 + n.ph)*.5+.5) : 0;
+      ctx.beginPath();
+      ctx.arc(px(n.x), py(n.y), (n.r + pulse*1.4)*devicePixelRatio, 0, Math.PI*2);
+      ctx.fillStyle = glow
+        ? 'rgba(227,164,74,'+(0.35+pulse*.45)+')'
+        : 'rgba(139,150,162,.35)';
+      ctx.fill();
+    });
+
+    const pulses = 5;
+    for(let k=0;k<pulses;k++){
+      const prog = ((t*.35 + k/pulses) % 1);
+      const a = nodes[(k*17)%N], b = nodes[(k*31+9)%N];
+      const x = a.x + (b.x-a.x)*prog, y = a.y + (b.y-a.y)*prog;
+      ctx.beginPath();
+      ctx.arc(px(x),py(y), 2.2*devicePixelRatio, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(227,164,74,'+(0.5*(1-Math.abs(prog-.5)*2)+.1)+')';
+      ctx.fill();
+    }
+
+    if(!reduced) requestAnimationFrame(draw);
+  }
+
+  initNodes();
+  resize();
+  addEventListener('resize', resize);
+  if(reduced){ nodes.forEach(n=>{n.x=n.tx;n.y=n.ty;}); draw(); }
+  else requestAnimationFrame(draw);
+
+  const modeIO = new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        mode = e.target.dataset.mode || 'hero';
+        layout();
+      }
+    });
+  }, {threshold:.35});
+  document.getElementById('hero').dataset.mode = 'hero';
+  document.querySelectorAll('section[data-mode]').forEach(s=>modeIO.observe(s));
+
+  /* ============ ANIMACIONES GSAP ============ */
+  if(hasGsap && !reduced){
+
+    /* entrada del hero */
+    gsap.from('.hro', {
+      y: 34, opacity: 0, duration: 1.2, ease: 'power3.out',
+      stagger: .14, delay: .2
+    });
+
+    /* reveals generales */
+    gsap.utils.toArray('.rv').forEach(el=>{
+      gsap.from(el, {
+        y: 30, opacity: 0, duration: 1, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 82%', once: true }
+      });
+    });
+
+    /* --- los dos loops del diagnóstico --- */
+    const loopST = { trigger: '#diagLoops', start: 'top 88%', toggleActions: 'play pause resume pause' };
+
+    gsap.to('.orbit', {
+      rotation: 360, duration: 8, ease: 'none', repeat: -1,
+      transformOrigin: '50% 50%',
+      scrollTrigger: loopST
+    });
+
+    /* etiquetas en esquinas: el punto pasa por NE a 1s, SE a 3s, SW a 5s, NW a 7s */
+    ['.loop-dead', '.loop-live'].forEach(scope=>{
+      const lsteps = gsap.utils.toArray(scope + ' .loop-step');
+      const tl = gsap.timeline({ repeat: -1, scrollTrigger: loopST });
+      lsteps.forEach((el, i)=>{
+        tl.call(()=>{
+          lsteps.forEach(x=>x.classList.remove('on'));
+          el.classList.add('on');
+        }, null, i*2 + 1);
+      });
+      tl.to({}, {duration: 8});
+    });
+
+    /* medidor negativo: se desangra, la pauta lo revive apenas, vuelve a caer */
+    const tlDead = gsap.timeline({ repeat: -1, repeatDelay: .8, scrollTrigger: loopST });
+    tlDead
+      .set('#meterDead', {width: '82%'})
+      .to('#meterDead', {width: '13%', duration: 6.5, ease: 'power1.in'})
+      .to('#pautaChip', {opacity: 1, duration: .25}, '-=0.2')
+      .to('#meterDead', {width: '44%', duration: .5, ease: 'power2.out'})
+      .to('#pautaChip', {opacity: 0, duration: .4}, '+=0.6')
+      .to('#meterDead', {width: '13%', duration: 3.6, ease: 'power1.in'});
+
+    /* medidor positivo: crece componiéndose, sin inyecciones */
+    const tlLive = gsap.timeline({ repeat: -1, repeatDelay: 1.4, scrollTrigger: loopST });
+    tlLive
+      .set('#meterLive', {width: '12%'})
+      .to('#meterLive', {width: '34%', duration: 3, ease: 'power1.in'})
+      .to('#meterLive', {width: '88%', duration: 4.5, ease: 'power2.in'})
+      .to('#compChip', {opacity: 1, duration: .3}, '-=1.2')
+      .to('#compChip', {opacity: 0, duration: .5}, '+=1.4');
+
+    /* --- pipeline: línea de flujo + puntos --- */
+    const dots = gsap.utils.toArray('#steps .dot');
+    const tlFlow = gsap.timeline({
+      scrollTrigger: { trigger: '#steps', start: 'top 75%', once: true }
+    });
+    tlFlow.to('#flowLine', {width: '100%', duration: 2.4, ease: 'power2.inOut'});
+    dots.forEach((d, i)=>{
+      tlFlow.call(()=>d.classList.add('lit'), null, i * .62);
+    });
+
+    /* --- selector orgánico → pauta --- */
+    const orgRow = document.getElementById('orgRow');
+    const BARS = 26;
+    const winners = new Set();
+    while(winners.size<3) winners.add(Math.floor(rand(3,BARS-3)));
+    for(let i=0;i<BARS;i++){
+      const bar = document.createElement('div');
+      bar.className = 'org-bar' + (winners.has(i) ? ' win' : '');
+      const h = winners.has(i) ? rand(105,140) : rand(18,70);
+      bar.style.setProperty('--h', h+'px');
+      orgRow.appendChild(bar);
+    }
+    const tlSel = gsap.timeline({
+      scrollTrigger: { trigger: '#selector', start: 'top 70%', once: true }
+    });
+    tlSel
+      .from('#orgRow .org-bar', {scaleY: 0, duration: .7, ease: 'power2.out', stagger: .04})
+      .from('#orgRow .org-bar.win', {
+        boxShadow: '0 0 0 rgba(227,164,74,0)', duration: .6
+      }, '-=0.2')
+      .from('#paidRow .paid-bar', {scaleY: 0, duration: .8, ease: 'power3.out', stagger: .18}, '-=0.1');
+
+    /* --- contadores de capacidad --- */
+    gsap.utils.toArray('#stats [data-count]').forEach(el=>{
+      const target = +el.dataset.count;
+      const obj = {v: 0};
+      gsap.to(obj, {
+        v: target, duration: 1.8, ease: 'power3.out',
+        snap: {v: 1},
+        onUpdate: ()=>{ el.textContent = obj.v; },
+        scrollTrigger: { trigger: '#stats', start: 'top 78%', once: true }
+      });
+    });
+
+    /* --- gantt waterfall --- */
+    gsap.from('.gb', {
+      scaleX: 0, transformOrigin: 'left center',
+      duration: 1.1, ease: 'power3.inOut', stagger: .35,
+      scrollTrigger: { trigger: '#gantt', start: 'top 72%', once: true }
+    });
+
+  } else {
+    /* sin gsap o con reduced motion: todo visible, gantt lleno */
+    document.querySelectorAll('.loop-step').forEach(el=>el.classList.add('on'));
+    const ml = document.getElementById('meterLive'); if(ml) ml.style.width = '78%';
+    document.querySelectorAll('#steps .dot').forEach(d=>d.classList.add('lit'));
+    const fl = document.getElementById('flowLine'); if(fl) fl.style.width = '100%';
+    const orgRow = document.getElementById('orgRow');
+    for(let i=0;i<26;i++){
+      const bar = document.createElement('div');
+      bar.className = 'org-bar' + ([6,13,20].includes(i) ? ' win' : '');
+      bar.style.setProperty('--h', ([6,13,20].includes(i) ? 120 : rand(18,70))+'px');
+      orgRow.appendChild(bar);
+    }
+    document.querySelectorAll('#stats [data-count]').forEach(el=>{ el.textContent = el.dataset.count; });
+  }
+
+  /* ============ CONTADOR VIVO ============ */
+  const liveNum = document.getElementById('liveNum');
+  const liveBox = document.getElementById('liveBox');
+  let liveVal = 0, liveStarted = false;
+
+  function flash(){
+    liveNum.classList.remove('tick');
+    void liveNum.offsetWidth;
+    liveNum.classList.add('tick');
+  }
+  function ramp(){
+    if(liveVal < 150){
+      liveVal += Math.ceil((150-liveVal)*.07) || 1;
+      if(liveVal>150) liveVal=150;
+      liveNum.textContent = liveVal;
+      setTimeout(ramp, 40);
+    } else {
+      slowTick();
+    }
+  }
+  function slowTick(){
+    setTimeout(()=>{
+      liveVal++;
+      liveNum.textContent = liveVal;
+      flash();
+      slowTick();
+    }, rand(1200, 3400));
+  }
+  new IntersectionObserver((es,o)=>{
+    es.forEach(e=>{
+      if(e.isIntersecting && !liveStarted){
+        liveStarted = true;
+        if(reduced){ liveVal=163; liveNum.textContent=liveVal; slowTick(); }
+        else ramp();
+        o.disconnect();
+      }
+    });
+  },{threshold:.5}).observe(liveBox);
+
+})();
+</script>
+</body>
+</html>
